@@ -1,0 +1,18 @@
+:host svg {
+  position: absolute;
+  margin: none;
+}
+
+:host canvas {
+  position: absolute;
+  margin: none;
+}
+
+
+:host .axis text {
+  font: 65px sans-serif;
+  font-weight: bold;
+  fill: none;
+  stroke: black;
+  stroke-width:2px;
+}

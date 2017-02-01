@@ -1,0 +1,18 @@
+<div [ngStyle]="{'width': canvasWidth + 'px', 'height': colorbarHeight  + 'px'}" 
+      style="display: inline-block">
+
+  <div class="color-bar" [ngStyle]="{'width': canvasWidth + 'px', 'height': colorbarHeight  + 'px'}">
+    <canvas [width]="canvasWidth" height="1"
+            [ngStyle]="{'width': canvasWidth + 'px', 'height': colorbarHeight  + 'px'}">
+    </canvas>
+    <svg [attr.width]="canvasWidth" [attr.height]="colorbarHeight" ></svg>
+  
+  </div>
+
+  <input type="number" name='min' placeholder="min" [value]="2" [ngStyle]="{'width': canvasWidth/2 - 10 + 'px'}"
+  (change)="setColorMin($event.target.value)" style="display: inline">
+
+  <input type="number" name='max' placeholder="max" [value]="10" [ngStyle]="{'width': canvasWidth/2 - 10 + 'px'}"
+  (change)="setColorMax($event.target.value)" style="display: inline">
+
+</div>
