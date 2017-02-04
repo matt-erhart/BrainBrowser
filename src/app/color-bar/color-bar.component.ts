@@ -59,7 +59,7 @@ export class ColorBarComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngOnChanges() {
   }
 
-
+  
   renderColorBar() {
     const canvas = this.d3ParentElement.select('canvas').node();
     const context = canvas.getContext('2d');

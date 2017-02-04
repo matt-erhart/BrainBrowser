@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs/Rx';
 interface Stc {
-  data: number[];
+  data: Array<Array<number>>;
   times: number[];
 }
 
@@ -19,7 +19,11 @@ import 'rxjs/add/operator/concat'
             <div #canvasid style="
                 width: 510px;
                 height: 370px;"
-                title="Ahhh yeaa"></div>
+                ></div>
+            <canvas #image style="
+                width: 301px;
+                height: 1000px;"
+                ></canvas>
                 `,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./brain.component.css']
@@ -53,6 +57,7 @@ export class BrainComponent implements OnInit {
   title = 'app works!';
 
   @ViewChild('canvasid') canvas;
+  @ViewChild('image') canvasImage;
   @select((s: IAppState) => s.colorMin) colorMin$;
   @select((s: IAppState) => s.colorMax) colorMax$;
 
@@ -77,6 +82,7 @@ export class BrainComponent implements OnInit {
          (min, max, time) => {
           this.color_scale.domain([min, max]);
           let colors = this.calculateVertexColors(this.stc_data, this.color_scale, time, min);
+          this.timeVertsImage(this.stc_data, this.color_scale, min)
           this.renderVertexColors(colors);
          });
 
@@ -84,7 +90,40 @@ export class BrainComponent implements OnInit {
 
   }
 
+  public timeVertsImage(stc_data: Stc, colorScale, min){
+    var dataDims = {width: stc_data.data.length, height: stc_data.data[0].length};
+    var targetImageSizes = {width: dataDims.width, height: 1000};
 
+    var widthStepSize = dataDims.width / targetImageSizes.width;
+    var heightStepSize = dataDims.height / targetImageSizes.height;
+
+    var widthIx  = this.d3.range(0,dataDims.width,  widthStepSize).map(x=>Math.round(x));
+    var widthIx  = widthIx.length > targetImageSizes.width ? widthIx.splice(0,widthIx.length-1) : widthIx;
+    var heightIx = this.d3.range(0,dataDims.height, heightStepSize).map(x=>Math.round(x));
+    var heightIx  = heightIx.length > targetImageSizes.height ? heightIx.splice(0,heightIx.length-1) : heightIx;
+
+    let sorted = stc_data.data//.map(timepoint => timepoint.sort((a,b)=>a-b));
+    console.log(targetImageSizes,widthIx.length,heightIx.length)
+    let context = this.canvasImage.nativeElement.getContext("2d")
+    let image = context.createImageData(targetImageSizes.width, targetImageSizes.height); // context is a canvas to draw on
+    
+    let count = 0;
+    heightIx.forEach((h)  => {
+      widthIx.forEach((w) => {
+      
+        var color_obj: any = colorScale(sorted[w][h]);
+        var color = sorted[w][h] > min ? this.d3.rgb(color_obj) : this.d3.color("gray");  // todo grey thresh
+        image.data[count] = color.r;
+        image.data[count + 1] = color.g;
+        image.data[count + 2] = color.b;
+        image.data[count + 3] = 255;
+        count+=4;
+      })
+    });
+
+    context.putImageData(image, 0, 0);
+
+  }
 
   public initFromLoadedStc(stc_data: Stc, hemi: string) {
     this.stc_data = stc_data;
@@ -96,6 +135,7 @@ export class BrainComponent implements OnInit {
 
     let colors = this.calculateVertexColors(this.stc_data, this.color_scale, 0, this.color_min);
     this.renderVertexColors(colors);
+    this.timeVertsImage(this.stc_data, this.color_scale, 1)
   }
 
   public calculateVertexColors(stc: Stc,
