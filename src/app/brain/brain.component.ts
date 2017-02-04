@@ -80,12 +80,17 @@ export class BrainComponent implements OnInit {
           this.renderVertexColors(colors);
          });
 
-    Observable.concat(getStc$, timeOrColorChange$).do(x=>console.log('concat')).subscribe();
+    Observable.concat(getStc$, timeOrColorChange$).subscribe();
 
   }
 
+
+
   public initFromLoadedStc(stc_data: Stc, hemi: string) {
     this.stc_data = stc_data;
+    this.stc_data.times = this.stc_data.times.map(x=>Math.round(x*1000));
+    const action: Actions = { type: 'SET_TIME_ARRAY', timeArray: this.stc_data.times };
+    this.ngRedux.dispatch(action);
     this.stc_colors = Array.apply(null, Array(this.stc_data.times.length - 1)).map(Array.prototype.valueOf, []);
     this.stc_loaded = true; //todo redux state
 
@@ -124,7 +129,6 @@ export class BrainComponent implements OnInit {
     let brainAttr = <THREE.BufferAttribute>brainGeo.attributes;
     brainAttr.color.array = new Float32Array(lutColors);
     brainAttr.color.needsUpdate = true;
-    console.log('rendered colors', brainMesh)
   }
   // color_timepoints(what2run) {
   //   var color_scale = this.d3.scaleSequential(this.d3.interpolateWarm)

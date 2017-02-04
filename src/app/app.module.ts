@@ -1,7 +1,7 @@
 import { DevToolsExtension } from 'ng2-redux/lib/components/dev-tools';
 // angular
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA, isDevMode } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
@@ -22,12 +22,14 @@ import { ColorBarComponent } from './color-bar/color-bar.component';
 
 
 import { BrainComponent } from './brain/brain.component';
+import { TimelineComponent } from './timeline/timeline.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     ColorBarComponent,
-    BrainComponent
+    BrainComponent,
+    TimelineComponent
   ],
   imports: [
     BrowserModule,
@@ -50,7 +52,9 @@ import { BrainComponent } from './brain/brain.component';
 
 export class AppModule {
   constructor(ngRedux: NgRedux<IAppState>, devTools: DevToolsExtension) {
-    ngRedux.configureStore(rootReducer, Initial_State,[], devTools.enhancer());
+    let enhancer = isDevMode() ? [devTools.enhancer()] : [];
+    let middleware = [];
+    ngRedux.configureStore(rootReducer, Initial_State, middleware, []);
 
   }
 }
