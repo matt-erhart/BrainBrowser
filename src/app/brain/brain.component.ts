@@ -12,6 +12,7 @@ import { D3Service, D3, Selection, ScaleSequential } from 'd3-ng2-service';
 import { NgRedux, select } from 'ng2-redux';
 import { IAppState, Actions } from '../store';
 import 'rxjs/add/operator/concat'
+import * as _ from "lodash";
 
 @Component({
   selector: 'app-brain',
@@ -20,10 +21,7 @@ import 'rxjs/add/operator/concat'
                 width: 510px;
                 height: 370px;"
                 ></div>
-            <canvas #image style="
-                width: 301px;
-                height: 1000px;"
-                ></canvas>
+
                 `,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./brain.component.css']
@@ -31,12 +29,11 @@ import 'rxjs/add/operator/concat'
 
 
 export class BrainComponent implements OnInit {
-  @Input() color_min: number = 3;
-  @Input() color_max: number = 7;
+  @Input() color_min: number = 1;
+  @Input() color_max: number = 5;
   @Input() hemi: string;
   @Input() stcFile: string;
   @select((s: IAppState) => s.timeIndex) timeIndex$;
-
 
   private tp;
   private scene: THREE.Scene;
@@ -62,7 +59,7 @@ export class BrainComponent implements OnInit {
   @select((s: IAppState) => s.colorMax) colorMax$;
 
   constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<IAppState>) {
-    this.d3 = d3Service.getD3(); // <-- obtain the d3 object from the D3 Service
+    this.d3 = d3Service.getD3();
   }
 
   ngOnInit() {
@@ -70,7 +67,7 @@ export class BrainComponent implements OnInit {
     this.color_scale = this.d3.scaleSequential(this.d3.interpolateWarm).domain([this.color_min, this.color_max]);
 
     let hemiSide = this.hemi === 'lh' ? 'left':'right';
-    this.init(this.canvas.nativeElement, this.hemi)
+    this.init(this.canvas.nativeElement, this.hemi)  
     let files$ = this.http.get('/assets/geometry/'+ hemiSide +'_hemisphere.json').map(res => JSON.parse(res['_body']))
       .subscribe(geometry => this.onGeometryLoaded(geometry, this.hemi));
 
@@ -82,46 +79,10 @@ export class BrainComponent implements OnInit {
          (min, max, time) => {
           this.color_scale.domain([min, max]);
           let colors = this.calculateVertexColors(this.stc_data, this.color_scale, time, min);
-          this.timeVertsImage(this.stc_data, this.color_scale, min)
           this.renderVertexColors(colors);
          });
 
     Observable.concat(getStc$, timeOrColorChange$).subscribe();
-
-  }
-
-  public timeVertsImage(stc_data: Stc, colorScale, min){
-    var dataDims = {width: stc_data.data.length, height: stc_data.data[0].length};
-    var targetImageSizes = {width: dataDims.width, height: 1000};
-
-    var widthStepSize = dataDims.width / targetImageSizes.width;
-    var heightStepSize = dataDims.height / targetImageSizes.height;
-
-    var widthIx  = this.d3.range(0,dataDims.width,  widthStepSize).map(x=>Math.round(x));
-    var widthIx  = widthIx.length > targetImageSizes.width ? widthIx.splice(0,widthIx.length-1) : widthIx;
-    var heightIx = this.d3.range(0,dataDims.height, heightStepSize).map(x=>Math.round(x));
-    var heightIx  = heightIx.length > targetImageSizes.height ? heightIx.splice(0,heightIx.length-1) : heightIx;
-
-    let sorted = stc_data.data//.map(timepoint => timepoint.sort((a,b)=>a-b));
-    console.log(targetImageSizes,widthIx.length,heightIx.length)
-    let context = this.canvasImage.nativeElement.getContext("2d")
-    let image = context.createImageData(targetImageSizes.width, targetImageSizes.height); // context is a canvas to draw on
-    
-    let count = 0;
-    heightIx.forEach((h)  => {
-      widthIx.forEach((w) => {
-      
-        var color_obj: any = colorScale(sorted[w][h]);
-        var color = sorted[w][h] > min ? this.d3.rgb(color_obj) : this.d3.color("gray");  // todo grey thresh
-        image.data[count] = color.r;
-        image.data[count + 1] = color.g;
-        image.data[count + 2] = color.b;
-        image.data[count + 3] = 255;
-        count+=4;
-      })
-    });
-
-    context.putImageData(image, 0, 0);
 
   }
 
@@ -135,7 +96,6 @@ export class BrainComponent implements OnInit {
 
     let colors = this.calculateVertexColors(this.stc_data, this.color_scale, 0, this.color_min);
     this.renderVertexColors(colors);
-    this.timeVertsImage(this.stc_data, this.color_scale, 1)
   }
 
   public calculateVertexColors(stc: Stc,

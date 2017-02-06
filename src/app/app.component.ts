@@ -21,10 +21,10 @@ import 'rxjs/add/operator/do';
 @Component({
     selector: 'app-root',
     template: ` 
+<app-heatmap></app-heatmap>
+<div *ngIf="false">
   <color-bar></color-bar>
 <app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
-<div *ngIf="false">
-<app-timeline></app-timeline>
   <div style="display: flex; flex-direction: row">
       <app-brain [stcFile]="'Tone_Change_Left_Right-lh.stc.json'" hemi='lh'></app-brain>
       <app-brain [stcFile]="'Tone_Change_Left_Right-rh.stc.json'" hemi='rh'></app-brain>

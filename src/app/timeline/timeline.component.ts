@@ -9,9 +9,7 @@ import 'rxjs/add/operator/combineLatest';
 @Component({
   selector: 'app-timeline',
   template: `
-<div>
-  <div #tooltip class="toolTip" [ngStyle]="{'top': pos.top + 'px','left': pos.right + 'px', 'display': pos.display}">{{tooltipMessage}}</div>
-</div>
+<div #tooltip class="toolTip" [ngStyle]="{'top': pos.top + 'px','left': pos.right + 'px', 'display': pos.display}">{{tooltipMessage}}</div>
 
        `,
   styles: [`
@@ -45,7 +43,7 @@ export class TimelineComponent implements AfterViewInit {
         console.log(this.tooltip)
 
       let outerWidth = 600; let outerHeight = 200;
-      let margin = {left: 50, right: 50, top: 50, bottom: 50};
+      let margin = {left: 100, right: 50, top: 50, bottom: 50};
       let innerWidth  = outerWidth - margin.left - margin.right;
       let innerHeight = outerHeight - margin.top - margin.bottom;
 

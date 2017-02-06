@@ -23,13 +23,15 @@ import { ColorBarComponent } from './color-bar/color-bar.component';
 
 import { BrainComponent } from './brain/brain.component';
 import { TimelineComponent } from './timeline/timeline.component';
+import { HeatmapComponent } from './heatmap/heatmap.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     ColorBarComponent,
     BrainComponent,
-    TimelineComponent
+    TimelineComponent,
+    HeatmapComponent
   ],
   imports: [
     BrowserModule,

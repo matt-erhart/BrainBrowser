@@ -59,7 +59,6 @@ export class ColorBarComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngOnChanges() {
   }
 
-  
   renderColorBar() {
     const canvas = this.d3ParentElement.select('canvas').node();
     const context = canvas.getContext('2d');
@@ -76,7 +75,7 @@ export class ColorBarComponent implements AfterViewInit, OnChanges, OnDestroy {
     context.putImageData(image, 0, 0);
   }
 
-  renderD3Axis() {
+  renderD3Axis() { //todo service
     const svg = this.d3.select('svg'),
       margin = { top: 0, left: 0, bottom: 0, right: 0 },
       width = +svg.attr('width') - margin.left - margin.right,

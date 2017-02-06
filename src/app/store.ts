@@ -1,4 +1,4 @@
-import {tassign} from 'tassign'
+import { tassign } from 'tassign'
 export interface IAppState {
     colorMin: Number;
     colorMax: Number;
@@ -17,18 +17,18 @@ export interface Actions {
 };
 
 export const Initial_State: IAppState = {
-    colorMin: 2,
-    colorMax: 10,
+    colorMin: 1,
+    colorMax: 5,
     timeIndex: 0,
     timeArray: []
 };
 
 export function rootReducer(state: IAppState, action: Actions): IAppState {
-    switch( action.type ){
-        case 'SET_COLOR_MIN':     return tassign( state, {colorMin:  action.colorMin });
-        case 'SET_COLOR_MAX':     return tassign( state, {colorMax:  action.colorMax });
-        case 'SET_TIME':          return tassign( state, {timeIndex: action.timeIndex });
-        case 'SET_TIME_ARRAY':    return tassign( state, {timeArray: action.timeArray });
-        }
+    switch (action.type) {
+        case 'SET_COLOR_MIN':  return tassign(state, { colorMin: action.colorMin });
+        case 'SET_COLOR_MAX':  return tassign(state, { colorMax: action.colorMax });
+        case 'SET_TIME':       return tassign(state, { timeIndex: action.timeIndex });
+        case 'SET_TIME_ARRAY': return tassign(state, { timeArray: action.timeArray });
+    }
     return state;
 };
