@@ -17,16 +17,37 @@ import * as _ from "lodash";
 @Component({
   selector: 'app-heatmap',
   template: `
-    <div class="color-bar" [ngStyle]="{'width': canvasWidth + 50 + 'px', 'height': canvasHeight  + 'px'}"
-    style="display: flex; justify-content: center; flex-direction: column; align-items: center">
-      <canvas #image [ngStyle]="{'width': canvasWidth - margin.left - margin.right + 1 + 'px', 'height': canvasHeight  + 'px'}"></canvas>
-      <svg [attr.width]="canvasWidth" [attr.height]="'50'" ></svg>
-      
-   </div>
-              
+    <md-card class="color-bar" [ngStyle]="{'width': canvasWidth + 20 + 'px', 'height': canvasHeight + 40  + 'px'}"
+    style="display: flex; justify-content: center; flex-direction: column; align-items: center; padding: 0">
+    <div>Activty for all verticies and times with stimuli markers</div>
+      <canvas #image [ngStyle]="{'width': canvasWidth - margin.left - margin.right + 1 + 'px', 'height': canvasHeight  + 'px'}"
+      (click)="canvasClicked($event)" style="cursor:pointer"></canvas> 
+      <svg [attr.width]="canvasWidth" [attr.height]="'50'" >
 
+            <line stroke="grey" y1="0" y2="20" x1="100" x2="100" style="z-index: -1"></line>
+            <text text-anchor="middle" dominant-baseline="middle" x="100" y="25">100ms</text>
+            <rect x="100" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"  style="cursor:none"
+            (mousemove)="showTooltip($event)" (mouseout)="hideTooltip($event)"> </rect>
+            <rect x="200" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"> </rect>
+
+      </svg>  
+   </md-card>
+<div #tooltip class="toolTip" [ngStyle]="{'top': pos.top + 'px','left': pos.left + 'px', 'display': pos.display}">{{tooltipMessage}}</div>
+      
   `,
-  styleUrls: ['./heatmap.component.css']
+    styles: [`
+  .toolTip {
+	position: absolute;
+  display: inline-block;
+  min-width: 80px;
+  height: 100px;
+  background: none repeat scroll 0 0 #ffffff;
+  border: 1px solid #6F257F;
+  padding: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+  `]
 })
 export class HeatmapComponent implements OnInit {
   @ViewChild('image') canvasImage;
@@ -34,14 +55,14 @@ export class HeatmapComponent implements OnInit {
   canvasWidth = 500;
   canvasHeight = 200;
   margin = { top: 0, left: 10, bottom: 0, right: 10 };
-
+  pos = {top: 0, left: 0, display: "none"}
+  tooltipMessage = "asd;lfkjas;dlfkj"
 
 constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<IAppState>) {
     this.d3 = d3Service.getD3();
   }
   ngOnInit() {
-
-    let min = 1; 
+    let min = 1;
     let max = 6;
     this.color_scale = this.d3.scaleSequential(this.d3.interpolateWarm).domain([min, max]);
     const getStc$ = this.http.get('/assets/data/Tone_Change_Left_Right-lh.stc.json')
@@ -109,4 +130,30 @@ renderD3Axis() { //todo service
       .attr('font', '65px sans-serif');
 
   }
+
+showTooltip(event: MouseEvent) {
+  this.pos.top  = event.clientY;
+  this.pos.left = event.clientX;
+  this.pos.display = 'inline-block'
+}
+
+hideTooltip(event: MouseEvent) {
+  this.pos.display = "none";
+}
+
+canvasClicked(event: MouseEvent) {
+ let margin = this.margin;
+    const svg = this.d3.select('svg'),
+      width = +svg.attr('width') - margin.left - margin.right,
+      height = +svg.attr('height') - margin.top - margin.bottom;
+
+  let xScale = this.d3.scaleLinear().domain([-100, 500]).range([0, width]);
+
+    var rect = this.canvasImage.nativeElement.getBoundingClientRect();
+    var x = event.clientX - rect.left;
+    var y = event.clientY - rect.top;
+    console.log("x: " + x + " y: " + y);
+  console.log(x, xScale.invert(x))
+}
+
 }
