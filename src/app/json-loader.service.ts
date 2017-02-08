@@ -37,6 +37,7 @@ export class JsonLoaderService {
     let hemiSide = hemi === 'lh' ? 'left':'right';
     return this.http.get('/assets/geometry/'+ hemiSide +'_hemisphere.json').map(res => JSON.parse(res['_body']))
     .do(geometry => {
+        geometry.hemi = hemi;
         const action: Actions = {type: 'ADD_VTK', vtk: geometry};
         this.ngRedux.dispatch(action);
       });
@@ -45,6 +46,8 @@ export class JsonLoaderService {
   loadStc(fileName: String, hemi: 'lh' | 'rh'| String){
     return this.http.get('/assets/data/' + fileName).take(1).map(res => <Stc>JSON.parse(res['_body']))
     .do(stc => {
+        stc.fileName = fileName;
+        stc.hemi = hemi;
         let action: Actions = {type: 'ADD_STC', stc: stc};
         this.ngRedux.dispatch(action);
 
@@ -56,6 +59,7 @@ export class JsonLoaderService {
   loadConditionInfo(fileName: String){
     return this.http.get('/assets/data/' + fileName).take(1).map(res => JSON.parse(res['_body']))
     .do(info => {
+        info.fileName = fileName;
         const action: Actions = {type: 'ADD_CONDITION_INFO', conditionInfo: info}
         this.ngRedux.dispatch(action);
       });

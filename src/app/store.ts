@@ -56,7 +56,7 @@ export interface Stc {
 };
 
 export interface Vtk {
-  data?: Array<Array<number>>;
+  data?: any;
   hemi?: String | 'lh' | 'rh';
   fileName?: String;
 };

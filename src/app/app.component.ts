@@ -22,10 +22,10 @@ import {JsonLoaderService} from './json-loader.service'
     selector: 'app-root',
     template: ` 
 
+<app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
 <div *ngIf="false">
 <app-heatmap></app-heatmap>
   <color-bar></color-bar>
-<app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
   <div style="display: flex; flex-direction: row">
       <app-brain [stcFile]="'Tone_Change_Left_Right-lh.stc.json'" 
       conditionInfoFile="Tone_Change_Left_Right-info.stc.json" hemi='lh'>
@@ -50,7 +50,6 @@ import {JsonLoaderService} from './json-loader.service'
 export class AppComponent implements OnInit {
     @select((s: IAppState) => s.timeIndex) timeIndex$;
     @select((s: IAppState) => s.timeArray) timeArray$;
-        @select((s: IAppState) => s.stcs) stcs$;
 
     time$: Observable<any>;
     minTime: number;
@@ -61,7 +60,6 @@ export class AppComponent implements OnInit {
 
     ngOnInit() {
         this.dataLoader.loadAll().subscribe();
-        this.stcs$.subscribe(x=>console.log(x))
         this.time$ = this.timeArray$.filter(x => x !== null).do(timeArray => {
             this.minTime  = timeArray[0];
             this.maxTime  = timeArray[timeArray.length - 1];

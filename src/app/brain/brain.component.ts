@@ -31,7 +31,6 @@ export class BrainComponent implements OnInit {
   @Input() hemi: string;
   @Input() stcFile: string;
   @Input() conditionInfoFile = 'Tone_Change_Left_Right-info.json';
-  @select((s: IAppState) => s.timeIndex) timeIndex$;
 
   private tp;
   private scene: THREE.Scene;
@@ -41,8 +40,6 @@ export class BrainComponent implements OnInit {
 
   private mesh: THREE.Mesh;
   private verts_per_hemi = 2562; // set number of verts
-  // public min: number;
-  // public max: number;
   private stc_loaded = false;
   public stc_colors;
   public stc_colors_up2date;
@@ -53,29 +50,23 @@ export class BrainComponent implements OnInit {
 
   @ViewChild('canvasid') canvas;
   @ViewChild('image') canvasImage;
-  @select((s: IAppState) => s.colorMin) colorMin$;
-  @select((s: IAppState) => s.colorMax) colorMax$;
+  @select((s: IAppState) => s.colorMin)  colorMin$;
+  @select((s: IAppState) => s.colorMax)  colorMax$;
+  @select((s: IAppState) => s.timeIndex) timeIndex$;
+  @select((s: IAppState) => s.stcs) stc$;
+  @select((s: IAppState) => s.vtks) vtk$;
+  @select((s: IAppState) => s.dataLoaded) dataLoaded$;
+
 
   constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<IAppState>) {
     this.d3 = d3Service.getD3();
   }
 
   ngOnInit() {
-
     this.color_scale = this.d3.scaleSequential(this.d3.interpolateWarm).domain([this.color_min, this.color_max]);
 
-    let hemiSide = this.hemi === 'lh' ? 'left':'right';
-    this.init(this.canvas.nativeElement, this.hemi)  
-    let files$ = this.http.get('/assets/geometry/'+ hemiSide +'_hemisphere.json').map(res => JSON.parse(res['_body']))
-      .subscribe(geometry => this.onGeometryLoaded(geometry, this.hemi));
-
-    //vtk, stc, condition
-    const getStc$ = this.http.get('/assets/data/' + this.stcFile).take(1).map(res => <Stc>JSON.parse(res['_body']))
-      .do(data => { this.initFromLoadedStc(data, 'lh') });
-
-    const getStcInfo$ = this.http.get('/assets/data/' + this.conditionInfoFile).take(1).map(res => <Stc>JSON.parse(res['_body']))
-      .do(data => { this.initFromLoadedStc(data, 'lh') });
-
+    this.init(this.canvas.nativeElement, this.hemi);
+    
     const timeOrColorChange$ = this.colorMin$
         .combineLatest(this.colorMax$, this.timeIndex$,
          (min, max, time) => {
@@ -84,8 +75,16 @@ export class BrainComponent implements OnInit {
           this.renderVertexColors(colors);
          });
 
-    Observable.concat(getStc$, timeOrColorChange$).subscribe();
-
+    Observable.concat(this.dataLoaded$.take(1),
+      this.vtk$.map(arr=> arr.filter(x => x.hemi === this.hemi)).filter(x=>x.length>0)
+      .do(geo => this.onGeometryLoaded(geo[0], this.hemi)).take(1),
+      this.stc$.map(arr=> arr.filter(x => x.fileName === this.stcFile)).filter(x=>x.length>0)
+      .do(stc => this.initFromLoadedStc(stc[0], this.hemi)).take(1),//.do(stc => this.initFromLoadedStc(stc, this.hemi)),
+      ).subscribe(x=>console.log('sub', x));
+    // Observable.concat(this.dataLoaded$.take(1),
+    //   this.vtk$.filter(x=>x.length>0).take(1).do(geo => console.log(geo)),
+    //   this.stc$.filter(x=>x.length>0).take(1),//.do(stc => this.initFromLoadedStc(stc, this.hemi)),
+    //   timeOrColorChange$).do(x=>console.log(x)).subscribe(x=>console.log('data loaded'));
   }
 
   public initFromLoadedStc(stc_data: Stc, hemi: string) {
@@ -188,6 +187,7 @@ export class BrainComponent implements OnInit {
   onGeometryLoaded(geo, hemi) {
 
     var loader = new THREE.BufferGeometryLoader();
+    console.log(geo, hemi)
     let geometry = loader.parse(geo)
 
     var material = new THREE.MeshLambertMaterial({
