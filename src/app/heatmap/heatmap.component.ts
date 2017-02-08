@@ -51,11 +51,16 @@ import * as _ from "lodash";
 })
 export class HeatmapComponent implements OnInit {
   @ViewChild('image') canvasImage;
+  @select((s: IAppState) => s.colorMin)  colorMin$;
+  @select((s: IAppState) => s.colorMax)  colorMax$;
+  @select((s: IAppState) => s.timeIndex) timeIndex$;
+  @select((s: IAppState) => s.timeArray) timeArray$;
+
   d3; color_scale;
   canvasWidth = 500;
   canvasHeight = 200;
-  margin = { top: 0, left: 10, bottom: 0, right: 10 };
-  pos = {top: 0, left: 0, display: "none"}
+  margin   = { top: 0, left: 10, bottom: 0, right: 10 };
+  pos     = {top: 0, left: 0, display: "none"}
   tooltipMessage = "asd;lfkjas;dlfkj"
 
 constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<IAppState>) {
@@ -153,7 +158,12 @@ canvasClicked(event: MouseEvent) {
     var x = event.clientX - rect.left;
     var y = event.clientY - rect.top;
     console.log("x: " + x + " y: " + y);
-  console.log(x, xScale.invert(x))
+  this.setTime(xScale.invert(x));
 }
-
+setTime(inputValue) {
+        this.timeArray$.take(1).subscribe(timeArray=>{
+            const action: Actions = { type: 'SET_TIME', timeIndex: timeArray.indexOf(+inputValue) };
+            this.ngRedux.dispatch(action);
+        });
+    }
 }

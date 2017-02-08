@@ -1,8 +1,5 @@
 import { Observable } from 'rxjs/Rx';
-interface Stc {
-  data: Array<Array<number>>;
-  times: number[];
-}
+
 
 import { Component, ViewChild, OnInit, ViewEncapsulation, Input } from '@angular/core';
 import { ColorBarComponent } from '../color-bar/color-bar.component';
@@ -10,7 +7,7 @@ import * as THREE from 'three'
 import { Http } from '@angular/http';
 import { D3Service, D3, Selection, ScaleSequential } from 'd3-ng2-service';
 import { NgRedux, select } from 'ng2-redux';
-import { IAppState, Actions } from '../store';
+import { IAppState, Actions, Stc } from '../store';
 import 'rxjs/add/operator/concat'
 import * as _ from "lodash";
 
@@ -33,6 +30,7 @@ export class BrainComponent implements OnInit {
   @Input() color_max: number = 5;
   @Input() hemi: string;
   @Input() stcFile: string;
+  @Input() conditionInfoFile = 'Tone_Change_Left_Right-info.json';
   @select((s: IAppState) => s.timeIndex) timeIndex$;
 
   private tp;
@@ -71,7 +69,11 @@ export class BrainComponent implements OnInit {
     let files$ = this.http.get('/assets/geometry/'+ hemiSide +'_hemisphere.json').map(res => JSON.parse(res['_body']))
       .subscribe(geometry => this.onGeometryLoaded(geometry, this.hemi));
 
-    const getStc$ = this.http.get('/assets/data/'+ this.stcFile).take(1).map(res => <Stc>JSON.parse(res['_body']))
+    //vtk, stc, condition
+    const getStc$ = this.http.get('/assets/data/' + this.stcFile).take(1).map(res => <Stc>JSON.parse(res['_body']))
+      .do(data => { this.initFromLoadedStc(data, 'lh') });
+
+    const getStcInfo$ = this.http.get('/assets/data/' + this.conditionInfoFile).take(1).map(res => <Stc>JSON.parse(res['_body']))
       .do(data => { this.initFromLoadedStc(data, 'lh') });
 
     const timeOrColorChange$ = this.colorMin$
@@ -130,57 +132,6 @@ export class BrainComponent implements OnInit {
     brainAttr.color.array = new Float32Array(lutColors);
     brainAttr.color.needsUpdate = true;
   }
-  // color_timepoints(what2run) {
-  //   var color_scale = this.d3.scaleSequential(this.d3.interpolateWarm)
-  //     .domain([this.color_min, this.color_max]);
-
-  //   if (what2run === 'all') {
-  //     console.log('all timepoints', this.stc_data.data)
-  //     var time_points = this.stc_data.times.length - 1;
-  //     for (var i = 0; i < time_points; i++) {
-  //       this.stc_colors[i] = this.color_vertices(this.stc_data.data[i], color_scale)
-  //     }
-  //   }
-  //   else {
-  //     this.stc_colors[this.tp] = this.color_vertices(this.stc_data.data[this.tp], color_scale)
-  //   }
-  //   this.showColors(this.stc_colors[this.tp]);
-
-  // }
-
-  // keyControls(key) {
-  //   if (this.stc_loaded) {
-  //     //noinspection TypeScriptUnresolvedVariable
-  //     var time_points = this.stc_data.times.length - 1;
-  //     // asdw controls
-  //     if (key === 'd') { this.tp = (this.tp < time_points) ? this.tp + 1 : time_points; } //a: move ahead a tp but not too far
-  //     if (key === 'a') { this.tp = (this.tp > 0) ? this.tp - 1 : 0; } //a: move ahead a tp but not too far
-  //     //d: move back but not too far
-  //     if (key === 'Enter') {
-  //       this.color_timepoints('all')
-  //       console.log(";)")
-
-  //     } // pre-computer all timepoints
-
-  //     this.color_timepoints('this_time_point')
-  //     this.showColors(this.stc_colors[this.tp])
-  //     console.log(this.stc_colors[this.tp])
-
-  //     // this.color_vertices(this.stc_data.data[this.tp], this.hemi);
-
-  //   }
-  // }
-
-  // updateColor(min, max) {
-  //   if (this.stc_loaded) {
-  //     var color_scale = this.d3.scaleSequential(this.d3.interpolateWarm)
-  //       .domain([this.color_min, this.color_max]);
-  //     this.color_timepoints('one')
-  //     this.showColors(this.stc_colors[this.tp])
-  //   }
-  // }
-
-
 
   init(container: HTMLElement, hemi: string) {
     this.hemi = hemi;

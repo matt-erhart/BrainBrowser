@@ -15,6 +15,7 @@ import { AngularFireModule } from 'angularfire2';
 // my services
 // import {CortexService} from './services/cortex.service';
 import { IAppState, Initial_State, rootReducer } from './store';
+import {JsonLoaderService} from './json-loader.service'
 
 // my components
 import { AppComponent } from './app.component';
@@ -47,7 +48,7 @@ import { HeatmapComponent } from './heatmap/heatmap.component';
       messagingSenderId: "400307061060"
     }),
   ],
-  providers: [D3Service],
+  providers: [D3Service,JsonLoaderService],
   bootstrap: [AppComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -56,7 +57,7 @@ export class AppModule {
   constructor(ngRedux: NgRedux<IAppState>, devTools: DevToolsExtension) {
     let enhancer = isDevMode() ? [devTools.enhancer()] : [];
     let middleware = [];
-    ngRedux.configureStore(rootReducer, Initial_State, middleware, []);
+    ngRedux.configureStore(rootReducer, Initial_State, middleware, devTools.enhancer());
 
   }
 }

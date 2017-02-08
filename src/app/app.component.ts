@@ -13,7 +13,7 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/take';
 import 'rxjs/add/operator/startWith';
 import 'rxjs/add/operator/do';
-
+import {JsonLoaderService} from './json-loader.service'
 //   <div style="display: flex; flex-direction: row">
 //       <app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
 //       <app-brain [stcFile]="'Tone_Change_Right_Left-rh.stc.json'" hemi='rh'></app-brain>
@@ -21,13 +21,17 @@ import 'rxjs/add/operator/do';
 @Component({
     selector: 'app-root',
     template: ` 
-<app-heatmap></app-heatmap>
+
 <div *ngIf="false">
+<app-heatmap></app-heatmap>
   <color-bar></color-bar>
 <app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
   <div style="display: flex; flex-direction: row">
-      <app-brain [stcFile]="'Tone_Change_Left_Right-lh.stc.json'" hemi='lh'></app-brain>
-      <app-brain [stcFile]="'Tone_Change_Left_Right-rh.stc.json'" hemi='rh'></app-brain>
+      <app-brain [stcFile]="'Tone_Change_Left_Right-lh.stc.json'" 
+      conditionInfoFile="Tone_Change_Left_Right-info.stc.json" hemi='lh'>
+      </app-brain>
+      <app-brain [stcFile]="'Tone_Change_Left_Right-rh.stc.json'" 
+      conditionInfoFile="Tone_Change_Left_Right-info.stc.json"hemi='rh'></app-brain>
   </div> 
 
     <h1 *ngIf="time$|async" >{{(time$ | async)}} milliseconds</h1>
@@ -46,14 +50,18 @@ import 'rxjs/add/operator/do';
 export class AppComponent implements OnInit {
     @select((s: IAppState) => s.timeIndex) timeIndex$;
     @select((s: IAppState) => s.timeArray) timeArray$;
+        @select((s: IAppState) => s.stcs) stcs$;
+
     time$: Observable<any>;
     minTime: number;
     maxTime: number;
     stepTime: number;
 
-    constructor(private ngRedux: NgRedux<IAppState>) {  }
+    constructor(private ngRedux: NgRedux<IAppState>, private dataLoader: JsonLoaderService) {  }
 
     ngOnInit() {
+        this.dataLoader.loadAll().subscribe();
+        this.stcs$.subscribe(x=>console.log(x))
         this.time$ = this.timeArray$.filter(x => x !== null).do(timeArray => {
             this.minTime  = timeArray[0];
             this.maxTime  = timeArray[timeArray.length - 1];
