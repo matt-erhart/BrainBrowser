@@ -70,6 +70,7 @@ export class BrainComponent implements OnInit {
     const timeOrColorChange$ = this.colorMin$
         .combineLatest(this.colorMax$, this.timeIndex$,
          (min, max, time) => {
+          console.log('brain time', min, max, time, this.stc_data)
           this.color_scale.domain([min, max]);
           let colors = this.calculateVertexColors(this.stc_data, this.color_scale, time, min);
           this.renderVertexColors(colors);
@@ -80,11 +81,7 @@ export class BrainComponent implements OnInit {
       .do(geo => this.onGeometryLoaded(geo[0], this.hemi)).take(1),
       this.stc$.map(arr=> arr.filter(x => x.fileName === this.stcFile)).filter(x=>x.length>0)
       .do(stc => this.initFromLoadedStc(stc[0], this.hemi)).take(1),//.do(stc => this.initFromLoadedStc(stc, this.hemi)),
-      ).subscribe(x=>console.log('sub', x));
-    // Observable.concat(this.dataLoaded$.take(1),
-    //   this.vtk$.filter(x=>x.length>0).take(1).do(geo => console.log(geo)),
-    //   this.stc$.filter(x=>x.length>0).take(1),//.do(stc => this.initFromLoadedStc(stc, this.hemi)),
-    //   timeOrColorChange$).do(x=>console.log(x)).subscribe(x=>console.log('data loaded'));
+      timeOrColorChange$).subscribe();
   }
 
   public initFromLoadedStc(stc_data: Stc, hemi: string) {
@@ -148,17 +145,19 @@ export class BrainComponent implements OnInit {
     // this.controls = new THREE.TrackballControls(this.camera, container);
 
     //LIGHTS
-    var light_color = new THREE.Color('rgb(192,192,192)');
-    var light_strength = .4;
+    // var light_color = new THREE.Color('rgb(192,192,192)');
+    var light_color = new THREE.Color('rgb(100,100,100)');
+    var light_strength = .2;
     var directionalLight = new THREE.DirectionalLight(); //light_color.getHex, light_strength
     directionalLight.position.set(-194, 15, 12);
+    directionalLight.color.set(light_color)
     directionalLight.name = 'directionalLight';
     this.scene.add(directionalLight);
 
-    var directionalLight = new THREE.DirectionalLight();// light_color, light_strength );
-    directionalLight.position.set(194, 15, 12);
-    directionalLight.name = 'directionalLight';
-    this.scene.add(directionalLight);
+    // var directionalLight = new THREE.DirectionalLight();// light_color, light_strength );
+    // directionalLight.position.set(194, 15, 12);
+    // directionalLight.name = 'directionalLight';
+    // this.scene.add(directionalLight);
 
     var ambientLight = new THREE.AmbientLight(); //
     ambientLight.name = 'ambientLight';
@@ -187,7 +186,6 @@ export class BrainComponent implements OnInit {
   onGeometryLoaded(geo, hemi) {
 
     var loader = new THREE.BufferGeometryLoader();
-    console.log(geo, hemi)
     let geometry = loader.parse(geo)
 
     var material = new THREE.MeshLambertMaterial({

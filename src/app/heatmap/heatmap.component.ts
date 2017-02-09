@@ -12,23 +12,25 @@ import { D3Service, D3, Selection, ScaleSequential } from 'd3-ng2-service';
 import { NgRedux, select } from 'ng2-redux';
 import { IAppState, Actions } from '../store';
 import 'rxjs/add/operator/concat'
-import * as _ from "lodash";
+import * as _ from "lodash"; //            
+
 
 @Component({
   selector: 'app-heatmap',
   template: `
     <md-card class="color-bar" [ngStyle]="{'width': canvasWidth + 20 + 'px', 'height': canvasHeight + 40  + 'px'}"
     style="display: flex; justify-content: center; flex-direction: column; align-items: center; padding: 0">
-    <div>Activty for all verticies and times with stimuli markers</div>
+    <div>Activty for brain verticies and times with stimuli markers</div>
       <canvas #image [ngStyle]="{'width': canvasWidth - margin.left - margin.right + 1 + 'px', 'height': canvasHeight  + 'px'}"
       (click)="canvasClicked($event)" style="cursor:pointer"></canvas> 
-      <svg [attr.width]="canvasWidth" [attr.height]="'50'" >
+      <svg class="heatmap" [attr.width]="canvasWidth" [attr.height]="'50'" >
+<line stroke="grey" y1="0" y2="20" [attr.x1]="pixelTime" [attr.x2]="pixelTime" style="z-index: -1"></line>
+            <text text-anchor="middle" dominant-baseline="middle" [attr.x]="pixelTime" y="25">{{timeMs}}ms</text>
 
-            <line stroke="grey" y1="0" y2="20" x1="100" x2="100" style="z-index: -1"></line>
-            <text text-anchor="middle" dominant-baseline="middle" x="100" y="25">100ms</text>
-            <rect x="100" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"  style="cursor:none"
-            (mousemove)="showTooltip($event)" (mouseout)="hideTooltip($event)"> </rect>
-            <rect x="200" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"> </rect>
+            <rect [attr.x]="stims?.stim1.x1" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"  style="cursor:none"
+            (mousemove)="showTooltip($event, 'stim1')" (mouseout)="hideTooltip($event)"> </rect>
+            <rect [attr.x]="stims?.stim2.x1" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"  style="cursor:none"
+            (mousemove)="showTooltip($event, 'stim2')" (mouseout)="hideTooltip($event)"> </rect>
 
       </svg>  
    </md-card>
@@ -40,9 +42,9 @@ import * as _ from "lodash";
 	position: absolute;
   display: inline-block;
   min-width: 80px;
-  height: 100px;
+  height: 20px;
   background: none repeat scroll 0 0 #ffffff;
-  border: 1px solid #6F257F;
+  border: 1px solid black;
   padding: 14px;
   text-align: center;
   pointer-events: none;
@@ -55,27 +57,53 @@ export class HeatmapComponent implements OnInit {
   @select((s: IAppState) => s.colorMax)  colorMax$;
   @select((s: IAppState) => s.timeIndex) timeIndex$;
   @select((s: IAppState) => s.timeArray) timeArray$;
+  @select((s: IAppState) => s.stcs) stcs$;
+  @select((s: IAppState) => s.conditionInfo) conditionInfo$;
+
+  @Input() infoFile: string;
+  @Input() stcFile: string;
+  
 
   d3; color_scale;
   canvasWidth = 500;
   canvasHeight = 200;
   margin   = { top: 0, left: 10, bottom: 0, right: 10 };
   pos     = {top: 0, left: 0, display: "none"}
-  tooltipMessage = "asd;lfkjas;dlfkj"
+  tooltipMessage = ""
+  stims;
+  pixelTime = 0;
+  timeMs = 0;
 
 constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<IAppState>) {
     this.d3 = d3Service.getD3();
   }
   ngOnInit() {
-    let min = 1;
-    let max = 6;
-    this.color_scale = this.d3.scaleSequential(this.d3.interpolateWarm).domain([min, max]);
-    const getStc$ = this.http.get('/assets/data/Tone_Change_Left_Right-lh.stc.json')
-    .take(1).map(res => <Stc>JSON.parse(res['_body']))
-      .do(data => { 
-      this.timeVertsImage(data, this.color_scale, min);
-      this.renderD3Axis();
-     }).subscribe();
+    //color
+    //get stc
+    //get time
+    let stc$ = this.stcs$.filter(arr => arr.filter(x => x.fileName === this.stcFile)).filter(x=>x.length>1).take(1)
+    let loadStc$ = stc$.do(stc => {
+          this.color_scale = this.d3.scaleSequential(this.d3.interpolateWarm).domain([1, 5]);
+          this.timeVertsImage(stc[0], this.color_scale, 0);
+          this.renderD3Axis();
+    });
+    const timeOrColorChange$ = this.colorMin$
+        .combineLatest(this.colorMax$, stc$,
+         (min, max, stc) => {
+          this.color_scale.domain([min,max])
+          this.timeVertsImage(stc[0], this.color_scale, min);
+          //update time here?
+         });
+    Observable.concat(loadStc$, timeOrColorChange$).subscribe();
+    
+    this.timeIndex$.combineLatest(this.timeArray$, (timeIX, timeArray) => {
+      const svg = this.d3.select('svg.heatmap'),
+      width = +svg.attr('width') - this.margin.left -this. margin.right,
+      xScale = this.d3.scaleLinear().domain([-100, 500]).range([0, width]);
+      this.pixelTime = xScale(timeArray[timeIX]) + this.margin.left;
+      this.timeMs = timeArray[timeIX];
+      console.log('heatmap time', this.pixelTime, this.timeMs)
+    }).subscribe()
   }
 
 public timeVertsImage(stc_data: Stc, colorScale, min){
@@ -90,9 +118,6 @@ public timeVertsImage(stc_data: Stc, colorScale, min){
     var heightIx = this.d3.range(0,dataDims.height, heightStepSize).map(x=>Math.round(x));
     var heightIx  = heightIx.length > targetImageSizes.height ? heightIx.splice(0,heightIx.length-1) : heightIx;
 
-    // let sorted = stc_data.data;//.map(timepoint => timepoint.sort((a,b)=>a-b));
-    // let sortRef = stc_data.data[100].sort().splice(0, targetImageSizes.height);
-
     let sorted = stc_data.data;
     let context = this.canvasImage.nativeElement.getContext("2d")
     let image = context.createImageData(targetImageSizes.width, targetImageSizes.height); // context is a canvas to draw on
@@ -103,9 +128,8 @@ public timeVertsImage(stc_data: Stc, colorScale, min){
 
         var color_obj: any = colorScale(sorted[w][h]);
         if (h < 2 && w < 2){
-        console.log(sorted[w][h] > min, sorted[w][h], min)
       }
-        var color = sorted[w][h] > min ? this.d3.rgb(color_obj) : this.d3.color("grey");  // todo grey thresh
+        var color = sorted[w][h] > min ? this.d3.rgb(color_obj) : this.d3.color("rgb(160,160,160)");  // todo grey thresh
         image.data[count] = color.r;
         image.data[count + 1] = color.g;
         image.data[count + 2] = color.b;
@@ -119,7 +143,7 @@ public timeVertsImage(stc_data: Stc, colorScale, min){
   }
 renderD3Axis() { //todo service
   let margin = this.margin;
-    const svg = this.d3.select('svg'),
+    const svg = this.d3.select('svg.heatmap'),
       width = +svg.attr('width') - margin.left - margin.right,
       height = +svg.attr('height') - margin.top - margin.bottom;
 
@@ -134,12 +158,17 @@ renderD3Axis() { //todo service
       .call(xAxisFunc).selectAll('text')
       .attr('font', '65px sans-serif');
 
+      // set stim1 stim2 locations
+      this.stims ={stim1: {x1: xScale(0)+margin.left, x2: xScale(70)},
+                   stim2: {x1: xScale(145)+margin.left, x2: xScale(225)}};  
+
   }
 
-showTooltip(event: MouseEvent) {
+showTooltip(event: MouseEvent, stim: string) {
   this.pos.top  = event.clientY;
   this.pos.left = event.clientX;
   this.pos.display = 'inline-block'
+  this.conditionInfo$.take(1).subscribe(info => info.filter(x=>x.fileName === this.infoFile).map(x=> this.tooltipMessage = x[stim]));
 }
 
 hideTooltip(event: MouseEvent) {
@@ -148,7 +177,7 @@ hideTooltip(event: MouseEvent) {
 
 canvasClicked(event: MouseEvent) {
  let margin = this.margin;
-    const svg = this.d3.select('svg'),
+    const svg = this.d3.select('svg.heatmap'),
       width = +svg.attr('width') - margin.left - margin.right,
       height = +svg.attr('height') - margin.top - margin.bottom;
 
@@ -157,8 +186,12 @@ canvasClicked(event: MouseEvent) {
     var rect = this.canvasImage.nativeElement.getBoundingClientRect();
     var x = event.clientX - rect.left;
     var y = event.clientY - rect.top;
-    console.log("x: " + x + " y: " + y);
-  this.setTime(xScale.invert(x));
+    let index = Math.round(xScale.invert(x));
+    index = index % 2 === 0 ? index : index-1;
+    // index = index < 0 ? 0: index; 
+    this.setTime(index);
+
+
 }
 setTime(inputValue) {
         this.timeArray$.take(1).subscribe(timeArray=>{

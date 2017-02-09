@@ -76,7 +76,7 @@ export class ColorBarComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   renderD3Axis() { //todo service
-    const svg = this.d3.select('svg'),
+    const svg = this.d3.select('svg.colorbar'),
       margin = { top: 0, left: 0, bottom: 0, right: 0 },
       width = +svg.attr('width') - margin.left - margin.right,
       height = +svg.attr('height') - margin.top - margin.bottom;

@@ -14,6 +14,8 @@ import 'rxjs/add/operator/take';
 import 'rxjs/add/operator/startWith';
 import 'rxjs/add/operator/do';
 import {JsonLoaderService} from './json-loader.service'
+import * as _ from "lodash";
+
 //   <div style="display: flex; flex-direction: row">
 //       <app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
 //       <app-brain [stcFile]="'Tone_Change_Right_Left-rh.stc.json'" hemi='rh'></app-brain>
@@ -22,26 +24,29 @@ import {JsonLoaderService} from './json-loader.service'
     selector: 'app-root',
     template: ` 
 
-<app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
-<div *ngIf="false">
-<app-heatmap></app-heatmap>
   <color-bar></color-bar>
+<app-heatmap [infoFile]="'Tone_Change_Right_Left-info.json'" [stcFile]="'Tone_Change_Right_Left-lh.stc.json'"></app-heatmap>
+<app-brain [stcFile]="'Tone_Change_Right_Left-lh.stc.json'" hemi='lh'></app-brain>
+    <input *ngIf="time$|async" type = "number"
+    [min]="minTime" [max]="maxTime" [step]="stepTime" [value]="time$|async"
+    (change)="setTime($event.target.value)"
+    [placeholder]="timeIndex$ | async">
+<div *ngIf="false">
+<md-slider thumbLabel tickInterval="50" min="-100" max="500" step="2" [value]="time$|async" style= "width: 500px"
+    (change)="setTime($event.value)"></md-slider>
+    <h1 *ngIf="time$|async" >{{(time$ | async)}} milliseconds</h1>
+    <md-slider thumbLabel tickInterval="50" min="-100" max="500" step="2" [value]="time$|async" style= "width: 500px"
+    (change)="setTime($event.value)"></md-slider>
+    
   <div style="display: flex; flex-direction: row">
       <app-brain [stcFile]="'Tone_Change_Left_Right-lh.stc.json'" 
       conditionInfoFile="Tone_Change_Left_Right-info.stc.json" hemi='lh'>
       </app-brain>
       <app-brain [stcFile]="'Tone_Change_Left_Right-rh.stc.json'" 
-      conditionInfoFile="Tone_Change_Left_Right-info.stc.json"hemi='rh'></app-brain>
+      conditionInfoFile="Tone_Change_Left_Right-info.stc.json" hemi='rh'></app-brain>
   </div> 
+  </div>
 
-    <h1 *ngIf="time$|async" >{{(time$ | async)}} milliseconds</h1>
-    <input *ngIf="time$|async" type = "number"
-    [min]="minTime" [max]="maxTime" [step]="stepTime" [value]="time$|async"
-    (change)="setTime($event.target.value)"
-    [placeholder]="timeIndex$ | async">
-    <md-slider thumbLabel tickInterval="50" min="-100" max="500" step="2" [value]="time$|async" style= "width: 500px"
-    (change)="setTime($event.value)"></md-slider>
-    </div>
                 `,
     styleUrls: ['./app.component.scss'],
     encapsulation: ViewEncapsulation.None,
@@ -64,7 +69,6 @@ export class AppComponent implements OnInit {
             this.minTime  = timeArray[0];
             this.maxTime  = timeArray[timeArray.length - 1];
             this.stepTime = timeArray[1] - timeArray[0];
-            console.log('step',this.stepTime);
         }).switchMap( timeArray => {
             return this.timeIndex$.filter(x => x !== null).map(ix => timeArray[ix]);
         }
@@ -72,12 +76,16 @@ export class AppComponent implements OnInit {
       }
 
     setTime(inputValue) {
+        
         this.timeArray$.take(1).subscribe(timeArray=>{
-            const action: Actions = { type: 'SET_TIME', timeIndex: timeArray.indexOf(+inputValue) };
+            const action: Actions = { type: 'SET_TIME', 
+            timeIndex: timeArray.indexOf(+inputValue)
+        };
+             console.log(action, timeArray, inputValue, timeArray.indexOf(+inputValue))
+
             this.ngRedux.dispatch(action);
+            console.log(action, +inputValue)
         });
     }
-    slider(event){
-        console.log(event);
-    }
+
 }
