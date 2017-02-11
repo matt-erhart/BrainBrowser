@@ -1,5 +1,5 @@
 import { Subscription } from 'rxjs/Rx';
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit } from '@angular/core';
 import { D3Service, D3, Selection } from 'd3-ng2-service';
 import { NgRedux, select } from 'ng2-redux';
 import { IAppState, Actions } from '../store';
@@ -11,12 +11,12 @@ import 'rxjs/add/operator/combineLatest'
   styleUrls: ['./color-bar.component.scss']
 })
 
-export class ColorBarComponent implements AfterViewInit, OnChanges, OnDestroy {
+export class ColorBarComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
   private htmlElement; // Host HTMLElement
   private d3ParentElement;
   @Input() canvasWidth = 600;
   @Input() colorbarHeight = 50;
-
+  sub;
   private subscriptions: Array<Subscription> = [];
 
   public d3: D3; // <-- Define the private member which will hold the d3 reference
@@ -42,18 +42,20 @@ export class ColorBarComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.ngRedux.dispatch(action);
   }
 
-  ngAfterViewInit() {
-    this.subscriptions.push(
-      this.colorMin$
-        .combineLatest(this.colorMax$, (min, max) => this.transitionD3Axis(min, max)).subscribe()
-    );
+  ngOnInit() {
 
+
+  }
+
+  ngAfterViewInit(){
     this.renderColorBar();
     this.renderD3Axis();
+      this.sub =  this.colorMin$
+        .combineLatest(this.colorMax$, (min, max) => this.transitionD3Axis(min, max)).subscribe(x=>console.log('update colorbar'));
   }
 
   ngOnDestroy() {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.sub.unsubscribe();
   };
 
   ngOnChanges() {

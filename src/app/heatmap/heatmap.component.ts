@@ -4,7 +4,7 @@ interface Stc {
   times: number[];
 }
 
-import { Component, ViewChild, OnInit, ViewEncapsulation, Input } from '@angular/core';
+import { Component, ViewChild, OnInit, ViewEncapsulation, Input, AfterViewInit, ChangeDetectionStrategy } from '@angular/core';
 import { ColorBarComponent } from '../color-bar/color-bar.component';
 import * as THREE from 'three'
 import { Http } from '@angular/http';
@@ -12,10 +12,11 @@ import { D3Service, D3, Selection, ScaleSequential } from 'd3-ng2-service';
 import { NgRedux, select } from 'ng2-redux';
 import { IAppState, Actions } from '../store';
 import 'rxjs/add/operator/concat'
-import * as _ from "lodash"; //            
+import * as _ from "lodash"; //
 
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.Default,
   selector: 'app-heatmap',
   template: `
     <md-card class="color-bar" [ngStyle]="{'width': canvasWidth + 20 + 'px', 'height': canvasHeight + 40  + 'px'}"
@@ -23,15 +24,14 @@ import * as _ from "lodash"; //
     <div>Activty for brain verticies and times with stimuli markers</div>
       <canvas #image [ngStyle]="{'width': canvasWidth - margin.left - margin.right + 1 + 'px', 'height': canvasHeight  + 'px'}"
       (click)="canvasClicked($event)" style="cursor:pointer"></canvas> 
-      <svg class="heatmap" [attr.width]="canvasWidth" [attr.height]="'50'" >
-<line stroke="grey" y1="0" y2="20" [attr.x1]="pixelTime" [attr.x2]="pixelTime" style="z-index: -1"></line>
-            <text text-anchor="middle" dominant-baseline="middle" [attr.x]="pixelTime" y="25">{{timeMs}}ms</text>
-
+      <svg #heatmap [attr.width]="canvasWidth" [attr.height]="'50'" >
+      
+      <line stroke="grey" y1="0" y2="20" [attr.x1]="pixelTime" [attr.x2]="pixelTime" style="z-index: -1"></line>
+      <text text-anchor="middle" dominant-baseline="middle" [attr.x]="pixelTime" y="25">{{timeMs}}ms</text>
             <rect [attr.x]="stims?.stim1.x1" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"  style="cursor:none"
             (mousemove)="showTooltip($event, 'stim1')" (mouseout)="hideTooltip($event)"> </rect>
             <rect [attr.x]="stims?.stim2.x1" width="70" y = "32" height="5" stroke="#0057e7"  fill="#0057e7"  style="cursor:none"
             (mousemove)="showTooltip($event, 'stim2')" (mouseout)="hideTooltip($event)"> </rect>
-
       </svg>  
    </md-card>
 <div #tooltip class="toolTip" [ngStyle]="{'top': pos.top + 'px','left': pos.left + 'px', 'display': pos.display}">{{tooltipMessage}}</div>
@@ -51,8 +51,9 @@ import * as _ from "lodash"; //
 }
   `]
 })
-export class HeatmapComponent implements OnInit {
+export class HeatmapComponent implements OnInit, AfterViewInit {
   @ViewChild('image') canvasImage;
+  @ViewChild('heatmap') heatmapSvg;
   @select((s: IAppState) => s.colorMin)  colorMin$;
   @select((s: IAppState) => s.colorMax)  colorMax$;
   @select((s: IAppState) => s.timeIndex) timeIndex$;
@@ -69,22 +70,39 @@ export class HeatmapComponent implements OnInit {
   canvasHeight = 200;
   margin   = { top: 0, left: 10, bottom: 0, right: 10 };
   pos     = {top: 0, left: 0, display: "none"}
-  tooltipMessage = ""
+  tooltipMessage = "";
   stims;
   pixelTime = 0;
   timeMs = 0;
+  svg;
+  width;
+  xScale;
 
 constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<IAppState>) {
     this.d3 = d3Service.getD3();
+
   }
-  ngOnInit() {
-    //color
-    //get stc
-    //get time
-    let stc$ = this.stcs$.filter(arr => arr.filter(x => x.fileName === this.stcFile)).filter(x=>x.length>1).take(1)
+
+  ngOnInit(){
+    this.xScale = this.d3.scaleLinear().domain([-100, 500]).range([0, this.canvasWidth-this.margin.left-this.margin.right]);
+    this.stims ={stim1: {x1: this.xScale(0)+this.margin.left, x2: this.xScale(70)},
+                   stim2: {x1: this.xScale(145)+this.margin.left, x2: this.xScale(225)}};
+
+      this.timeIndex$.combineLatest(this.timeArray$, (timeIX, timeArray) => {
+      this.pixelTime = this.xScale(timeArray[timeIX]) + this.margin.left;
+      this.timeMs = timeArray[timeIX];
+    }).subscribe(x=>console.log('heatmap update'))
+  }
+
+  ngAfterViewInit() {
+    this.svg = this.d3.select(this.heatmapSvg.nativeElement);
+    this.width = +this.svg.attr('width') - this.margin.left - this.margin.right;
+    
+    let stc$ = this.stcs$.map(arr=> arr.filter(x => x.fileName === this.stcFile)).filter(x=>x.length>0).take(1)
     let loadStc$ = stc$.do(stc => {
           this.color_scale = this.d3.scaleSequential(this.d3.interpolateWarm).domain([1, 5]);
           this.timeVertsImage(stc[0], this.color_scale, 0);
+          console.log('heatmap STC', stc[0], this.stcFile === stc[0].fileName)
           this.renderD3Axis();
     });
     const timeOrColorChange$ = this.colorMin$
@@ -94,16 +112,9 @@ constructor(private http: Http, d3Service: D3Service, private ngRedux: NgRedux<I
           this.timeVertsImage(stc[0], this.color_scale, min);
           //update time here?
          });
-    Observable.concat(loadStc$, timeOrColorChange$).subscribe();
+    Observable.concat(loadStc$, timeOrColorChange$).subscribe(x=>console.log('update heatmap'));
     
-    this.timeIndex$.combineLatest(this.timeArray$, (timeIX, timeArray) => {
-      const svg = this.d3.select('svg.heatmap'),
-      width = +svg.attr('width') - this.margin.left -this. margin.right,
-      xScale = this.d3.scaleLinear().domain([-100, 500]).range([0, width]);
-      this.pixelTime = xScale(timeArray[timeIX]) + this.margin.left;
-      this.timeMs = timeArray[timeIX];
-      console.log('heatmap time', this.pixelTime, this.timeMs)
-    }).subscribe()
+    
   }
 
 public timeVertsImage(stc_data: Stc, colorScale, min){
@@ -142,16 +153,10 @@ public timeVertsImage(stc_data: Stc, colorScale, min){
 
   }
 renderD3Axis() { //todo service
-  let margin = this.margin;
-    const svg = this.d3.select('svg.heatmap'),
-      width = +svg.attr('width') - margin.left - margin.right,
-      height = +svg.attr('height') - margin.top - margin.bottom;
+    let xAxisFunc = this.d3.axisBottom(this.xScale);
 
-    let xScale = this.d3.scaleLinear().domain([-100, 500]).range([0, width]);
-    let xAxisFunc = this.d3.axisBottom(xScale);
-
-    let g = svg.append('g')
-      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')'); // aligns canvas and axis
+    let g = this.svg.append('g')
+      .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')'); // aligns canvas and axis
 
     g.append('g')
       .attr('class', 'axis')
@@ -159,8 +164,7 @@ renderD3Axis() { //todo service
       .attr('font', '65px sans-serif');
 
       // set stim1 stim2 locations
-      this.stims ={stim1: {x1: xScale(0)+margin.left, x2: xScale(70)},
-                   stim2: {x1: xScale(145)+margin.left, x2: xScale(225)}};  
+
 
   }
 
@@ -176,22 +180,13 @@ hideTooltip(event: MouseEvent) {
 }
 
 canvasClicked(event: MouseEvent) {
- let margin = this.margin;
-    const svg = this.d3.select('svg.heatmap'),
-      width = +svg.attr('width') - margin.left - margin.right,
-      height = +svg.attr('height') - margin.top - margin.bottom;
-
-  let xScale = this.d3.scaleLinear().domain([-100, 500]).range([0, width]);
-
     var rect = this.canvasImage.nativeElement.getBoundingClientRect();
     var x = event.clientX - rect.left;
     var y = event.clientY - rect.top;
-    let index = Math.round(xScale.invert(x));
+    let index = Math.round(this.xScale.invert(x));
     index = index % 2 === 0 ? index : index-1;
     // index = index < 0 ? 0: index; 
     this.setTime(index);
-
-
 }
 setTime(inputValue) {
         this.timeArray$.take(1).subscribe(timeArray=>{

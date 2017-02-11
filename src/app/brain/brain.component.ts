@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs/Rx';
 
 
-import { Component, ViewChild, OnInit, ViewEncapsulation, Input } from '@angular/core';
+import { Component, ViewChild, OnInit, ViewEncapsulation, Input, AfterViewInit } from '@angular/core';
 import { ColorBarComponent } from '../color-bar/color-bar.component';
 import * as THREE from 'three'
 import { Http } from '@angular/http';
@@ -70,6 +70,7 @@ export class BrainComponent implements OnInit {
     const timeOrColorChange$ = this.colorMin$
         .combineLatest(this.colorMax$, this.timeIndex$,
          (min, max, time) => {
+           console.log('calc verts', this.stc_data, this.color_scale, time, min)
           console.log('brain time', min, max, time, this.stc_data)
           this.color_scale.domain([min, max]);
           let colors = this.calculateVertexColors(this.stc_data, this.color_scale, time, min);
@@ -80,15 +81,13 @@ export class BrainComponent implements OnInit {
       this.vtk$.map(arr=> arr.filter(x => x.hemi === this.hemi)).filter(x=>x.length>0)
       .do(geo => this.onGeometryLoaded(geo[0], this.hemi)).take(1),
       this.stc$.map(arr=> arr.filter(x => x.fileName === this.stcFile)).filter(x=>x.length>0)
-      .do(stc => this.initFromLoadedStc(stc[0], this.hemi)).take(1),//.do(stc => this.initFromLoadedStc(stc, this.hemi)),
-      timeOrColorChange$).subscribe();
+      .do(stc => this.initFromLoadedStc(stc[0], this.hemi)).take(1),
+      timeOrColorChange$).subscribe(x=>console.log('update brain'));
   }
 
   public initFromLoadedStc(stc_data: Stc, hemi: string) {
     this.stc_data = stc_data;
     this.stc_data.times = this.stc_data.times.map(x=>Math.round(x*1000));
-    const action: Actions = { type: 'SET_TIME_ARRAY', timeArray: this.stc_data.times };
-    this.ngRedux.dispatch(action);
     this.stc_colors = Array.apply(null, Array(this.stc_data.times.length - 1)).map(Array.prototype.valueOf, []);
     this.stc_loaded = true; //todo redux state
 

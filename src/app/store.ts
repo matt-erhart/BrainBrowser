@@ -24,8 +24,8 @@ export interface Actions {
 };
 
 export const Initial_State: IAppState = {
-    colorMin: 1,
-    colorMax: 5,
+    colorMin: 2,
+    colorMax: 10,
     timeIndex: 0,
     timeArray: [],
     stcs: [],

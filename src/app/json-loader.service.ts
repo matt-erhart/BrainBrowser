@@ -51,7 +51,8 @@ export class JsonLoaderService {
         let action: Actions = {type: 'ADD_STC', stc: stc};
         this.ngRedux.dispatch(action);
 
-        action = {type: 'SET_TIME_ARRAY', timeArray: stc.times.map(x=>Math.round(x*1000))}; //convert to milliseconds
+        const timeArr = stc.times.map(x=>Math.round(x));
+        action = {type: 'SET_TIME_ARRAY', timeArray: timeArr}; //convert to milliseconds
         this.ngRedux.dispatch(action);
       });
   }
