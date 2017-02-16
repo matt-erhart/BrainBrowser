@@ -23,14 +23,6 @@ import * as _ from "lodash";
 @Component({
     selector: 'app-root',
     template: ` 
-
-<div *ngIf="false">
-
-
-
-    
-</div>
-    
 <div style="display: flex; flex-direction: column; align-items: center">
 <md-slider thumbLabel tickInterval="50" min="-100" max="500" step="2" [value]="time$|async" style= "width: 500px"
     (change)="setTime($event.value)"></md-slider>
@@ -105,9 +97,9 @@ export class AppComponent implements AfterViewInit {
       }
 
     setTime(inputValue) {
-        
+
         this.timeArray$.take(1).subscribe(timeArray=>{
-            const action: Actions = { type: 'SET_TIME', 
+            const action: Actions = { type: 'SET_TIME',
             timeIndex: timeArray.indexOf(+inputValue)
         };
              console.log(action, timeArray, inputValue, timeArray.indexOf(+inputValue))

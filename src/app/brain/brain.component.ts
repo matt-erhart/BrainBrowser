@@ -20,8 +20,7 @@ import * as _ from "lodash";
                 ></div>
 
                 `,
-  encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./brain.component.css']
+  encapsulation: ViewEncapsulation.None
 })
 
 

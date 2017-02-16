@@ -57,7 +57,7 @@ export class AppModule {
   constructor(ngRedux: NgRedux<IAppState>, devTools: DevToolsExtension) {
     let enhancer = isDevMode() ? [devTools.enhancer()] : [];
     let middleware = [];
-    ngRedux.configureStore(rootReducer, Initial_State, middleware, devTools.enhancer());
+    ngRedux.configureStore(rootReducer, Initial_State, middleware, []);
 
   }
 }
